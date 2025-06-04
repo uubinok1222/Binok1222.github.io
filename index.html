@@ -1,9 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Website của tôi</title>
+  <title>Trò chơi đánh dấu bom 6x6</title>
+  <style>
+    table { border-collapse: collapse; margin: 10px auto; }
+    td { width: 40px; height: 40px; border: 1px solid black; text-align: center; cursor: pointer; font-size: 16px; }
+    .bomb { background: red; color: white; }
+    .flag { background: yellow; }
+    .revealed { background: lightgray; }
+    #timer { text-align: center; font-size: 18px; }
+  </style>
 </head>
 <body>
-  <h1>Xin chào từ điện thoại!</h1>
+  <h2>Đánh dấu bom 6x6</h2>
+  <div id="timer">Thời gian: 2:00</div>
+  <table id="grid"></table>
+  <script>
+    const size = 6;
+    const bombCount = 10;
+    let bombs = [];
+    let grid = Array(size).fill().map(() => Array(size).fill(false));
+    let timeLeft = 120; // 2 phút
+    let gameOver = false;
+
+    // Tạo bom ngẫu nhiên
+    while (bombs.length < bombCount) {
+      let x = Math.floor(Math.random() * size);
+      let y = Math.floor(Math.random() * size);
+      if (!bombs.some(([bx, by]) => bx === x && by === y)) bombs.push([x, y]);
+    }
+
+    // Tạo lưới
+    let table = document.getElementById('grid');
+    for (let i = 0; i < size; i++) {
+      let row = table.insertRow();
+      for (let j = 0; j < size; j++) {
+        let cell = row.insertCell();
+        cell.onclick = () => reveal(i, j);
+        cell.oncontextmenu = (e) => { e.preventDefault(); flag(i, j); };
+      }
+    }
+
+    // Đếm ngược thời gian
+    let timer = setInterval(() => {
+      if (gameOver) return;
+      timeLeft--;
+      let minutes = Math.floor(timeLeft / 60);
+      let seconds = timeLeft % 60;
+      document.getElementById('timer').textContent = `Thời gian: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      if (timeLeft <= 0) {
+        gameOver = true;
+        clearInterval(timer);
+        alert('Hết thời gian! Game Over!');
+      }
+    }, 1000);
+
+    function reveal(i, j) {
+      if (gameOver || grid[i][j]) return;
+      let cell = table.rows[i].cells[j];
+      if (cell.classList.contains('flag')) return;
+      grid[i][j] = true;
+      if (bombs.some(([x, y]) => x === i && y === j)) {
+        cell.classList.add('bomb');
+        cell.textContent = '💣';
+        gameOver = true;
+        clearInterval(timer);
+        alert('Game Over! Bạn dính bom!');
+      } else {
+        cell.classList.add('revealed');
+        let count = countNearbyBombs(i, j);
+        if (count > 0) cell.textContent = count;
+      }
+    }
+
+    function flag(i, j) {
+      if (gameOver || grid[i][j]) return;
+      let cell = table.rows[i].cells[j];
+      cell.classList.toggle('flag');
+      cell.textContent = cell.classList.contains('flag') ? '🚩' : '';
+    }
+
+    function countNearbyBombs(i, j) {
+      let count = 0;
+      for (let di = -1; di <= 1; di++) {
+        for (let dj = -1; dj <= 1; dj++) {
+          let ni = i + di, nj = j + dj;
+          if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
+            if (bombs.some(([x, y]) => x === ni && y === nj)) count++;
+          }
+        }
+      }
+      return count;
+    }
+  </script>
 </body>
 </html>
